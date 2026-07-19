@@ -1,0 +1,16 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-Dance[sqla]
+Flask-Mail
+Flask-Limiter
+openpyxl
+pandas
+reportlab
+gspread
+oauth2client
+python-dotenv
+google-cloud-firestore
+google-auth-httplib2
+google-auth-oauthlib
+google-api-python-client
