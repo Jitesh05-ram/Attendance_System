@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <div class="logo-icon">
+                <i class="fas fa-clipboard-check"></i>
+            </div>
+            <h1 class="auth-title">Attendance System</h1>
+            <p class="auth-subtitle">Sign in to continue</p>
+        </div>
+        
+        <form method="POST" class="auth-form" id="loginForm">
+            <div class="input-group">
+                <i class="fas fa-envelope input-icon"></i>
+                <input 
+                    type="email" 
+                    name="email" 
+                    placeholder="Enter your email" 
+                    required 
+                    autocomplete="email"
+                    class="auth-input"
+                >
+            </div>
+            
+            <div class="input-group">
+                <i class="fas fa-lock input-icon"></i>
+                <input 
+                    type="password" 
+                    name="password" 
+                    id="passwordInput"
+                    placeholder="Enter your password" 
+                    required 
+                    autocomplete="current-password"
+                    class="auth-input"
+                >
+                <button type="button" class="toggle-password" id="togglePassword" aria-label="Toggle password visibility">
+                    <i class="fas fa-eye" id="passwordIcon"></i>
+                </button>
+            </div>
+            
+            <button type="submit" class="auth-btn primary-btn" id="loginBtn">
+                <span class="btn-text">Sign In</span>
+                <div class="btn-loader hidden">
+                    <div class="spinner"></div>
+                </div>
+            </button>
+        </form>
+        
+        <div class="auth-links">
+            <a href="{{ url_for('forgot_password') }}" class="link">Forgot your password?</a>
+            <a href="{{ url_for('register') }}" class="link">Create new account</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.auth-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 100px);
+    padding: 20px;
+}
+
+.auth-card {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 1px solid rgba(100, 255, 218, 0.3);
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.6),
+        0 0 80px rgba(100, 255, 218, 0.08);
+    padding: 40px 35px;
+    width: 100%;
+    max-width: 420px;
+    animation: fadeInUp 0.7s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.auth-logo {
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+.logo-icon {
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 20px;
+    background: linear-gradient(135deg, #64ffda 0%, #22d3ee 100%);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 30px rgba(100, 255, 218, 0.4);
+    animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 8px 30px rgba(100, 255, 218, 0.4);
+    }
+    50% {
+        box-shadow: 0 12px 40px rgba(100, 255, 218, 0.6);
+    }
+}
+
+.logo-icon i {
+    font-size: 40px;
+    color: #0f172a;
+}
+
+.auth-title {
+    color: #64ffda;
+    font-size: 26px;
+    margin: 0 0 8px 0;
+    text-shadow: 0 0 15px rgba(100, 255, 218, 0.4);
+}
+
+.auth-subtitle {
+    color: #94a3b8;
+    font-size: 15px;
+    margin: 0;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    margin-bottom: 25px;
+}
+
+.input-group {
+    position: relative;
+}
+
+.input-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64ffda;
+    font-size: 18px;
+    pointer-events: none;
+}
+
+.auth-input {
+    width: 100%;
+    padding: 16px 48px;
+    background: rgba(15, 23, 42, 0.9);
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    border-radius: 16px;
+    color: #e2e8f0;
+    font-size: 15px;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.auth-input:focus {
+    border-color: #64ffda;
+    box-shadow: 0 0 0 4px rgba(100, 255, 218, 0.1);
+}
+
+.auth-input::placeholder {
+    color: #64748b;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #64ffda;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 8px;
+    transition: all 0.2s ease;
+}
+
+.toggle-password:hover {
+    color: #22d3ee;
+}
+
+.auth-btn {
+    position: relative;
+    padding: 16px 24px;
+    border: none;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.primary-btn {
+    background: linear-gradient(135deg, #64ffda 0%, #22d3ee 100%);
+    color: #0f172a;
+    box-shadow: 0 6px 25px rgba(100, 255, 218, 0.4);
+}
+
+.primary-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(100, 255, 218, 0.5);
+}
+
+.google-btn {
+    background: rgba(30, 41, 59, 0.95);
+    color: #e2e8f0;
+    border: 2px solid rgba(148, 163, 184, 0.3);
+}
+
+.google-btn:hover {
+    background: rgba(51, 65, 85, 0.95);
+    border-color: #64ffda;
+    transform: translateY(-2px);
+}
+
+.google-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.btn-loader {
+    display: flex;
+}
+
+.hidden {
+    display: none;
+}
+
+.spinner {
+    width: 22px;
+    height: 22px;
+    border: 3px solid rgba(15, 23, 42, 0.3);
+    border-top-color: #0f172a;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    margin: 25px 0;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(148, 163, 184, 0.2);
+}
+
+.divider-text {
+    color: #94a3b8;
+    font-size: 14px;
+    padding: 0 16px;
+}
+
+.auth-links {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.link {
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.link:hover {
+    color: #64ffda;
+}
+
+@media (max-width: 480px) {
+    .auth-card {
+        padding: 30px 25px;
+        border-radius: 20px;
+    }
+    .auth-title {
+        font-size: 22px;
+    }
+    .logo-icon {
+        width: 75px;
+        height: 75px;
+    }
+    .logo-icon i {
+        font-size: 34px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('passwordInput');
+    const passwordIcon = document.getElementById('passwordIcon');
+
+    togglePassword.addEventListener('click', function() {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        passwordIcon.classList.toggle('fa-eye');
+        passwordIcon.classList.toggle('fa-eye-slash');
+    });
+
+    const loginForm = document.getElementById('loginForm');
+    const loginBtn = document.getElementById('loginBtn');
+    const btnText = loginBtn.querySelector('.btn-text');
+    const btnLoader = loginBtn.querySelector('.btn-loader');
+
+    loginForm.addEventListener('submit', function(e) {
+        loginBtn.disabled = true;
+        btnText.style.display = 'none';
+        btnLoader.classList.remove('hidden');
+    });
+});
+</script>
+{% endblock %}

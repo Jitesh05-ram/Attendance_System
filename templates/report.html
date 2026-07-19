@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block content %}
+<h1><i class="fas fa-chart-bar"></i> Reports</h1>
+
+<!-- Filter Toggle Button -->
+<button class="filter-toggle" onclick="toggleFilters()">
+    <i class="fas fa-filter"></i> Filters
+</button>
+
+<!-- Filters -->
+<form method="GET" class="filter-form hidden" id="filterForm">
+    <!-- Quick Date Options -->
+    <div style="margin-bottom: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(100,255,218,0.2);">
+        <label style="display: block; margin-bottom: 0.75rem; color: #64ffda; font-weight: 600;"><i class="fas fa-clock"></i> Quick Date Selection:</label>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn" onclick="setToday()" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                <i class="fas fa-calendar-day"></i> Today
+            </button>
+            <button type="button" class="btn" onclick="setThisMonth()" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                <i class="fas fa-calendar-alt"></i> This Month
+            </button>
+        </div>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: 1fr; gap: 0.8rem; margin-bottom: 1rem;">
+        <div>
+            <label><i class="fas fa-graduation-cap"></i> Year:</label>
+            <select name="year">
+                <option value="">All Years</option>
+                {% for year in years %}
+                <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>{{ year }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label><i class="fas fa-door-open"></i> Class:</label>
+            <select name="class">
+                <option value="">All Classes</option>
+                {% for class_name in class_names %}
+                <option value="{{ class_name }}" {% if selected_class == class_name %}selected{% endif %}>{{ class_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label><i class="fas fa-calendar-alt"></i> Start Date:</label>
+            <input type="date" name="start_date" value="{{ start_date }}" id="startDate">
+        </div>
+        <div>
+            <label><i class="fas fa-calendar-alt"></i> End Date:</label>
+            <input type="date" name="end_date" value="{{ end_date }}" id="endDate">
+        </div>
+        <div>
+            <label><i class="fas fa-clipboard-check"></i> Status:</label>
+            <select name="status">
+                <option value="">All</option>
+                <option value="Present" {% if status == 'Present' %}selected{% endif %}>Present</option>
+                <option value="Absent" {% if status == 'Absent' %}selected{% endif %}>Absent</option>
+            </select>
+        </div>
+    </div>
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button type="submit"><i class="fas fa-filter"></i> Filter</button>
+        <a href="{{ url_for('reports') }}" class="btn" style="background: linear-gradient(135deg, #64748b 0%, #475569 100%);"><i class="fas fa-redo"></i> Reset</a>
+    </div>
+</form>
+
+<!-- Download Buttons -->
+{% if report_data %}
+<div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+    <a href="{{ url_for('download_report_excel', year=selected_year, class=selected_class, start_date=start_date, end_date=end_date, status=status) }}" class="btn">
+        <i class="fas fa-file-excel"></i> Download Excel
+    </a>
+    <a href="{{ url_for('download_report_pdf', year=selected_year, class=selected_class, start_date=start_date, end_date=end_date, status=status) }}" class="btn">
+        <i class="fas fa-file-pdf"></i> Download PDF
+    </a>
+</div>
+
+<!-- Report Table - Desktop -->
+<div class="table-wrapper desktop-table">
+    <table>
+        <thead>
+            <tr>
+                <th><i class="fas fa-calendar-alt"></i> Date</th>
+                <th><i class="fas fa-id-badge"></i> Roll No</th>
+                <th><i class="fas fa-user"></i> Name</th>
+                <th><i class="fas fa-door-open"></i> Class</th>
+                <th><i class="fas fa-clipboard-check"></i> Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in report_data %}
+            <tr>
+                <td>{{ record.date }}</td>
+                <td>{{ record.roll_no }}</td>
+                <td>{{ record.name }}</td>
+                <td>{{ record.class }}</td>
+                <td>{{ record.status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Report Cards - Mobile -->
+<div class="mobile-cards">
+    {% for record in report_data %}
+    <div class="mobile-card">
+        <div class="mobile-card-row">
+            <span class="mobile-card-label"><i class="fas fa-calendar-alt"></i> Date:</span>
+            <span class="mobile-card-value">{{ record.date }}</span>
+        </div>
+        <div class="mobile-card-row">
+            <span class="mobile-card-label"><i class="fas fa-id-badge"></i> Roll No:</span>
+            <span class="mobile-card-value">{{ record.roll_no }}</span>
+        </div>
+        <div class="mobile-card-row">
+            <span class="mobile-card-label"><i class="fas fa-user"></i> Name:</span>
+            <span class="mobile-card-value">{{ record.name }}</span>
+        </div>
+        <div class="mobile-card-row">
+            <span class="mobile-card-label"><i class="fas fa-door-open"></i> Class:</span>
+            <span class="mobile-card-value">{{ record.class }}</span>
+        </div>
+        <div class="mobile-card-row">
+            <span class="mobile-card-label"><i class="fas fa-clipboard-check"></i> Status:</span>
+            <span class="mobile-card-value" style="color: {% if record.status == 'Present' %}#10b981{% else %}#ef4444{% endif %}; font-weight: 600;">{{ record.status }}</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<p style="color: #94a3b8; text-align: center; padding: 2rem;">No attendance records found for the selected filters.</p>
+{% endif %}
+
+<script>
+function toggleFilters() {
+    const filterForm = document.getElementById('filterForm');
+    filterForm.classList.toggle('hidden');
+}
+
+function setToday() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('startDate').value = today;
+    document.getElementById('endDate').value = today;
+}
+
+function setThisMonth() {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+    document.getElementById('startDate').value = firstDay;
+    document.getElementById('endDate').value = lastDay;
+}
+
+// Show filters by default if any filter is active
+document.addEventListener('DOMContentLoaded', function() {
+    const yearFilter = document.querySelector('select[name="year"]').value;
+    const classFilter = document.querySelector('select[name="class"]').value;
+    const startDate = document.querySelector('input[name="start_date"]').value;
+    const endDate = document.querySelector('input[name="end_date"]').value;
+    const statusFilter = document.querySelector('select[name="status"]').value;
+    
+    if (yearFilter || classFilter || startDate || endDate || statusFilter) {
+        document.getElementById('filterForm').classList.remove('hidden');
+    }
+});
+</script>
+
+<style>
+/* Mobile Cards */
+.mobile-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1.2rem;
+}
+.mobile-card {
+    background: rgba(30, 41, 59, 0.8);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid rgba(100, 255, 218, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+.mobile-card-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+.mobile-card-row:last-child {
+    border-bottom: none;
+}
+.mobile-card-label {
+    color: #94a3b8;
+    font-size: 0.85rem;
+}
+.mobile-card-value {
+    color: #e2e8f0;
+    font-size: 0.9rem;
+}
+
+/* Desktop Table Only on Desktop */
+@media (min-width: 768px) {
+    .mobile-cards {
+        display: none;
+    }
+    .desktop-table {
+        display: block;
+    }
+    .filter-form > div:first-child {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 767px) {
+    .desktop-table {
+        display: none;
+    }
+    .filter-form > div:first-child {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h1><i class="fas fa-user-plus"></i> Add Student</h1>
+<form method="POST">
+    <div>
+        <label><i class="fas fa-id-badge"></i> Roll No:</label>
+        <input type="text" name="roll_no" placeholder="Enter roll number" required>
+    </div>
+    <div>
+        <label><i class="fas fa-user"></i> Name:</label>
+        <input type="text" name="name" placeholder="Enter student name" required>
+    </div>
+    <div>
+        <label><i class="fas fa-envelope"></i> Email (optional):</label>
+        <input type="email" name="email" placeholder="Enter student email">
+    </div>
+    <div>
+        <label><i class="fas fa-door-open"></i> Class:</label>
+        <input type="text" name="class_name" placeholder="Enter class name" required>
+    </div>
+    <div>
+        <label><i class="fas fa-graduation-cap"></i> Year:</label>
+        <select name="year" required>
+            {% for y in years %}
+                <option value="{{ y }}">{{ y }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit"><i class="fas fa-check-circle"></i> Add Student</button>
+</form>
+{% endblock %}

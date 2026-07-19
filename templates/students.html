@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<h1><i class="fas fa-user-graduate"></i> Students</h1>
+<a href="{{ url_for('add_student') }}" class="btn"><i class="fas fa-plus-circle"></i> Add Student</a>
+
+<!-- Search and Filter Section -->
+<div class="search-filter-section" style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px; margin: 1.5rem 0; border: 1px solid rgba(0, 255, 255, 0.2);">
+    <form method="GET" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+        <div style="flex: 1; min-width: 200px;">
+            <label><i class="fas fa-search"></i> Search:</label>
+            <input type="text" name="search" placeholder="Search by name, roll, email, or class" value="{{ search_query }}" style="width: 100%;">
+        </div>
+        <div style="min-width: 120px;">
+            <label><i class="fas fa-graduation-cap"></i> Year:</label>
+            <select name="year" style="width: 100%;">
+                <option value="">All Years</option>
+                {% for y in years %}
+                    <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% if classes %}
+        <div style="min-width: 150px;">
+            <label><i class="fas fa-door-open"></i> Class:</label>
+            <select name="class_filter" style="width: 100%;">
+                <option value="">All Classes</option>
+                {% for c in classes %}
+                    <option value="{{ c }}" {% if selected_class == c %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        <button type="submit" class="btn" style="padding: 0.75rem 1.5rem;"><i class="fas fa-filter"></i> Filter</button>
+        <a href="{{ url_for('students') }}" class="btn" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); padding: 0.75rem 1.5rem;"><i class="fas fa-redo"></i> Reset</a>
+    </form>
+</div>
+
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th><i class="fas fa-star"></i> Year</th>
+                <th><i class="fas fa-id-badge"></i> Roll No</th>
+                <th><i class="fas fa-user"></i> Name</th>
+                <th><i class="fas fa-envelope"></i> Email</th>
+                <th><i class="fas fa-door-open"></i> Class</th>
+                <th><i class="fas fa-cog"></i> Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td>
+                    {% if student.year == 'FY' %}
+                        <i class="fas fa-graduation-cap" style="color: #06b6d4; font-size: 1.2rem;" title="First Year"></i>
+                    {% elif student.year == 'SY' %}
+                        <i class="fas fa-book" style="color: #10b981; font-size: 1.2rem;" title="Second Year"></i>
+                    {% elif student.year == 'TY' %}
+                        <i class="fas fa-trophy" style="color: #f59e0b; font-size: 1.2rem;" title="Third Year"></i>
+                    {% endif %}
+                    <span style="margin-left: 0.5rem;">{{ student.year }}</span>
+                </td>
+                <td>{{ student.roll_no }}</td>
+                <td>{{ student.name }}</td>
+                <td>{{ student.email or '-' }}</td>
+                <td>{{ student.class_name }}</td>
+                <td>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 0.3rem 0.8rem; font-size: 0.85rem;">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <form method="POST" action="{{ url_for('delete_student', student_id=student.id) }}" style="display: inline;">
+                            <button type="submit" onclick="return confirm('Are you sure you want to delete this student?');" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 0.3rem 0.8rem; font-size: 0.85rem;">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% block content %}
+<h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+
+<!-- Quick Actions -->
+<div class="quick-actions" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    <a href="{{ url_for('attendance') }}" class="quick-action-card" style="text-decoration: none;">
+        <i class="fas fa-clipboard-check fa-2x"></i>
+        <span>Mark Attendance</span>
+    </a>
+    <a href="{{ url_for('add_student') }}" class="quick-action-card" style="text-decoration: none;">
+        <i class="fas fa-user-plus fa-2x"></i>
+        <span>Add Student</span>
+    </a>
+    <a href="{{ url_for('reports') }}" class="quick-action-card" style="text-decoration: none;">
+        <i class="fas fa-chart-bar fa-2x"></i>
+        <span>Download Reports</span>
+    </a>
+    <a href="{{ url_for('students') }}" class="quick-action-card" style="text-decoration: none;">
+        <i class="fas fa-search fa-2x"></i>
+        <span>Search Student</span>
+    </a>
+</div>
+
+<!-- Stats Grid -->
+<div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+    <div class="stat-card" style="background: linear-gradient(135deg, rgba(100,255,218,0.1) 0%, rgba(34,211,238,0.1) 100%); border: 1px solid rgba(100,255,218,0.3); border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3); transition: all 0.3s ease;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #64ffda 0%, #22d3ee 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-users fa-xl" style="color: #0f172a;"></i>
+            </div>
+            <div>
+                <h3 style="font-size: 1rem; color: #94a3b8; margin: 0; font-weight: 500;">Total Students</h3>
+                <p style="font-size: 2rem; color: #64ffda; margin: 0; font-weight: 700;">{{ total_students }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card" style="background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(34,197,94,0.1) 100%); border: 1px solid rgba(16,185,129,0.3); border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3); transition: all 0.3s ease;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #10b981 0%, #22c55e 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-check-circle fa-xl" style="color: #0f172a;"></i>
+            </div>
+            <div>
+                <h3 style="font-size: 1rem; color: #94a3b8; margin: 0; font-weight: 500;">Present Today</h3>
+                <p style="font-size: 2rem; color: #10b981; margin: 0; font-weight: 700;">{{ present_today }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card" style="background: linear-gradient(135deg, rgba(239,68,68,0.1) 0%, rgba(248,113,113,0.1) 100%); border: 1px solid rgba(239,68,68,0.3); border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3); transition: all 0.3s ease;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #ef4444 0%, #f87171 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-times-circle fa-xl" style="color: #0f172a;"></i>
+            </div>
+            <div>
+                <h3 style="font-size: 1rem; color: #94a3b8; margin: 0; font-weight: 500;">Absent Today</h3>
+                <p style="font-size: 2rem; color: #ef4444; margin: 0; font-weight: 700;">{{ absent_today }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card" style="background: linear-gradient(135deg, rgba(250,204,21,0.1) 0%, rgba(251,191,36,0.1) 100%); border: 1px solid rgba(250,204,21,0.3); border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3); transition: all 0.3s ease;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #facc15 0%, #fbbf24 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-percentage fa-xl" style="color: #0f172a;"></i>
+            </div>
+            <div>
+                <h3 style="font-size: 1rem; color: #94a3b8; margin: 0; font-weight: 500;">Attendance %</h3>
+                <p style="font-size: 2rem; color: #facc15; margin: 0; font-weight: 700;">{{ attendance_percentage }}%</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card" style="background: linear-gradient(135deg, rgba(124,58,237,0.1) 0%, rgba(167,139,250,0.1) 100%); border: 1px solid rgba(124,58,237,0.3); border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3); transition: all 0.3s ease;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-exclamation-triangle fa-xl" style="color: #0f172a;"></i>
+            </div>
+            <div>
+                <h3 style="font-size: 1rem; color: #94a3b8; margin: 0; font-weight: 500;">Total Defaulters</h3>
+                <p style="font-size: 2rem; color: #a78bfa; margin: 0; font-weight: 700;">{{ defaulters_count }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card" style="background: linear-gradient(135deg, rgba(236,72,153,0.1) 0%, rgba(244,114,182,0.1) 100%); border: 1px solid rgba(236,72,153,0.3); border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3); transition: all 0.3s ease;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-calendar-alt fa-xl" style="color: #0f172a;"></i>
+            </div>
+            <div>
+                <h3 style="font-size: 1rem; color: #94a3b8; margin: 0; font-weight: 500;">This Month</h3>
+                <p style="font-size: 1.2rem; color: #f472b6; margin: 0; font-weight: 700;">{{ month_present }} Present, {{ month_absent }} Absent</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Grid (Charts + Calendar + Recent Activity) -->
+<div class="main-grid" style="display: grid; grid-template-columns: 1fr 350px; gap: 1.25rem; margin-bottom: 1.5rem;">
+    <!-- Charts Section -->
+    <div class="charts-section" style="display: flex; flex-direction: column; gap: 1.25rem;">
+        <!-- Chart Row 1 -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+            <!-- Year-wise Distribution -->
+            <div class="chart-card" style="background: rgba(30,41,59,0.8); backdrop-filter: blur(10px); border-radius: 16px; padding: 1.5rem; border: 1px solid rgba(100,255,218,0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                <h3 style="color: #64ffda; margin: 0 0 1rem 0; font-size: 1.1rem;"><i class="fas fa-users-cog"></i> Year-wise Distribution</h3>
+                <canvas id="yearChart"></canvas>
+            </div>
+            
+            <!-- Attendance by Class -->
+            <div class="chart-card" style="background: rgba(30,41,59,0.8); backdrop-filter: blur(10px); border-radius: 16px; padding: 1.5rem; border: 1px solid rgba(100,255,218,0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                <h3 style="color: #64ffda; margin: 0 0 1rem 0; font-size: 1.1rem;"><i class="fas fa-door-open"></i> Attendance by Class</h3>
+                <canvas id="classChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Monthly Trend -->
+        <div class="chart-card" style="background: rgba(30,41,59,0.8); backdrop-filter: blur(10px); border-radius: 16px; padding: 1.5rem; border: 1px solid rgba(100,255,218,0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            <h3 style="color: #64ffda; margin: 0 0 1rem 0; font-size: 1.1rem;"><i class="fas fa-chart-line"></i> Monthly Attendance Trend</h3>
+            <canvas id="monthlyChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Sidebar (Calendar + Recent Activity) -->
+    <div class="sidebar-section" style="display: flex; flex-direction: column; gap: 1.25rem;">
+        <!-- Calendar Widget -->
+        <div class="calendar-widget" style="background: rgba(30,41,59,0.8); backdrop-filter: blur(10px); border-radius: 16px; padding: 1.5rem; border: 1px solid rgba(100,255,218,0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            <h3 style="color: #64ffda; margin: 0 0 1rem 0; font-size: 1.1rem;"><i class="fas fa-calendar-day"></i> Today</h3>
+            <div style="text-align: center; padding: 1rem 0;">
+                <p style="font-size: 1.5rem; color: #e2e8f0; margin: 0; font-weight: 600;">{{ today.strftime('%B %d, %Y') }}</p>
+                <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 1rem;">
+                    <div style="text-align: center;">
+                        <i class="fas fa-check-circle fa-2x" style="color: #10b981;"></i>
+                        <p style="color: #94a3b8; margin: 0.5rem 0 0 0;">Present: {{ present_today }}</p>
+                    </div>
+                    <div style="text-align: center;">
+                        <i class="fas fa-times-circle fa-2x" style="color: #ef4444;"></i>
+                        <p style="color: #94a3b8; margin: 0.5rem 0 0 0;">Absent: {{ absent_today }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="recent-activity" style="background: rgba(30,41,59,0.8); backdrop-filter: blur(10px); border-radius: 16px; padding: 1.5rem; border: 1px solid rgba(100,255,218,0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.3); flex: 1;">
+            <h3 style="color: #64ffda; margin: 0 0 1rem 0; font-size: 1.1rem;"><i class="fas fa-history"></i> Recent Activity</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 400px; overflow-y: auto;">
+                {% for activity in recent_activity %}
+                <div class="activity-item" style="display: flex; gap: 0.75rem; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid {% if activity.type == 'attendance' %}#10b981{% else %}#22d3ee{% endif %};">
+                    <i class="fas {{ activity.icon }}" style="color: {% if activity.type == 'attendance' %}#10b981{% else %}#22d3ee{% endif %}; font-size: 1.2rem; margin-top: 0.1rem;"></i>
+                    <div style="flex: 1;">
+                        <p style="color: #e2e8f0; margin: 0; font-size: 0.9rem;">{{ activity.message }}</p>
+                        <p style="color: #64748b; margin: 0.25rem 0 0 0; font-size: 0.8rem;">{{ activity.time }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+                {% if not recent_activity %}
+                <p style="color: #94a3b8; text-align: center;">No recent activity</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Year-wise Distribution Chart
+    const yearCtx = document.getElementById('yearChart').getContext('2d');
+    new Chart(yearCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['FY', 'SY', 'TY'],
+            datasets: [{
+                data: [{{ fy_students }}, {{ sy_students }}, {{ ty_students }}],
+                backgroundColor: ['#22d3ee', '#10b981', '#f59e0b'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#e2e8f0' }
+                }
+            }
+        }
+    });
+
+    // Attendance by Class Chart
+    const classCtx = document.getElementById('classChart').getContext('2d');
+    const classNames = [{% for cls in class_attendance %}"{{ cls.name }}",{% endfor %}];
+    const classPercents = [{% for cls in class_attendance %}{{ cls.percent }},{% endfor %}];
+    new Chart(classCtx, {
+        type: 'bar',
+        data: {
+            labels: classNames.length > 0 ? classNames : ['No Data'],
+            datasets: [{
+                label: 'Attendance %',
+                data: classNames.length > 0 ? classPercents : [0],
+                backgroundColor: 'rgba(100, 255, 218, 0.6)',
+                borderColor: '#64ffda',
+                borderWidth: 1,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: { color: '#94a3b8' },
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                },
+                x: {
+                    ticks: { color: '#94a3b8' },
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    // Monthly Trend Chart (simple with dummy data for last 6 months)
+    const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+    new Chart(monthlyCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            datasets: [{
+                label: 'Attendance %',
+                data: [75, 82, 78, 85, 80, {{ attendance_percentage if attendance_percentage else 75 }}],
+                borderColor: '#64ffda',
+                backgroundColor: 'rgba(100, 255, 218, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: '#64ffda'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: { color: '#94a3b8' },
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                },
+                x: {
+                    ticks: { color: '#94a3b8' },
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: { color: '#e2e8f0' }
+                }
+            }
+        }
+    });
+</script>
+
+<style>
+    /* Quick Action Cards Hover */
+    .quick-action-card {
+        background: linear-gradient(135deg, rgba(30,41,59,0.8) 0%, rgba(15,23,42,0.9) 100%);
+        border: 1px solid rgba(100,255,218,0.2);
+        border-radius: 12px;
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .quick-action-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(100,255,218,0.2);
+        border-color: rgba(100,255,218,0.4);
+    }
+    .quick-action-card i {
+        color: #64ffda;
+    }
+    .quick-action-card span {
+        color: #e2e8f0;
+        font-weight: 600;
+    }
+    
+    /* Stat Card Hover */
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    }
+    
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .main-grid {
+            grid-template-columns: 1fr !important;
+        }
+        .main-grid > div:first-child > div:first-child {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
+{% endblock %}
