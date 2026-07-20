@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<h1><i class="fas fa-edit"></i> Edit Category</h1>
+
+<div class="auth-wrapper" style="min-height: auto;">
+    <div class="auth-card">
+        <form method="POST" class="auth-form">
+            <div class="input-group">
+                <i class="fas fa-code input-icon"></i>
+                <input type="text" name="code" placeholder="Category Code (e.g., MJ5, OE)" value="{{ category.code }}" required class="auth-input">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-book input-icon"></i>
+                <input type="text" name="name" placeholder="Name (Optional)" value="{{ category.name or '' }}" class="auth-input">
+            </div>
+            <button type="submit" class="auth-btn primary-btn"><i class="fas fa-save"></i> Update Category</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

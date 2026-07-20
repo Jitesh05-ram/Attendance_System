@@ -23,8 +23,19 @@
     </div>
     
     <div style="display: grid; grid-template-columns: 1fr; gap: 0.8rem; margin-bottom: 1rem;">
+        {% if admission_years %}
         <div>
-            <label><i class="fas fa-graduation-cap"></i> Year:</label>
+            <label><i class="fas fa-calendar-alt"></i> Admission Year:</label>
+            <select name="admission_year">
+                <option value="">All</option>
+                {% for y in admission_years %}
+                <option value="{{ y }}" {% if selected_admission_year == y|string %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        <div>
+            <label><i class="fas fa-graduation-cap"></i> Current Year:</label>
             <select name="year">
                 <option value="">All Years</option>
                 {% for year in years %}
@@ -41,6 +52,17 @@
                 {% endfor %}
             </select>
         </div>
+        {% if subjects %}
+        <div>
+            <label><i class="fas fa-book"></i> Subject:</label>
+            <select name="subject">
+                <option value="">All Subjects</option>
+                {% for s in subjects %}
+                <option value="{{ s.id }}" {% if selected_subject == s.id|string %}selected{% endif %}>{{ icon_to_emoji(s.icon) }} {{ s.name }} {% if s.category %}({{ s.category.code }}){% endif %}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
         <div>
             <label><i class="fas fa-calendar-alt"></i> Start Date:</label>
             <input type="date" name="start_date" value="{{ start_date }}" id="startDate">
@@ -67,10 +89,10 @@
 <!-- Download Buttons -->
 {% if report_data %}
 <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-    <a href="{{ url_for('download_report_excel', year=selected_year, class=selected_class, start_date=start_date, end_date=end_date, status=status) }}" class="btn">
+    <a href="{{ url_for('download_report_excel', year=selected_year, class=selected_class, admission_year=selected_admission_year, subject=selected_subject, start_date=start_date, end_date=end_date, status=status) }}" class="btn">
         <i class="fas fa-file-excel"></i> Download Excel
     </a>
-    <a href="{{ url_for('download_report_pdf', year=selected_year, class=selected_class, start_date=start_date, end_date=end_date, status=status) }}" class="btn">
+    <a href="{{ url_for('download_report_pdf', year=selected_year, class=selected_class, admission_year=selected_admission_year, subject=selected_subject, start_date=start_date, end_date=end_date, status=status) }}" class="btn">
         <i class="fas fa-file-pdf"></i> Download PDF
     </a>
 </div>
@@ -84,6 +106,7 @@
                 <th><i class="fas fa-id-badge"></i> Roll No</th>
                 <th><i class="fas fa-user"></i> Name</th>
                 <th><i class="fas fa-door-open"></i> Class</th>
+                <th><i class="fas fa-book"></i> Subject</th>
                 <th><i class="fas fa-clipboard-check"></i> Status</th>
             </tr>
         </thead>
@@ -94,6 +117,7 @@
                 <td>{{ record.roll_no }}</td>
                 <td>{{ record.name }}</td>
                 <td>{{ record.class }}</td>
+                <td>{{ record.subject or '-' }}</td>
                 <td>{{ record.status }}</td>
             </tr>
             {% endfor %}
@@ -120,6 +144,10 @@
         <div class="mobile-card-row">
             <span class="mobile-card-label"><i class="fas fa-door-open"></i> Class:</span>
             <span class="mobile-card-value">{{ record.class }}</span>
+        </div>
+        <div class="mobile-card-row">
+            <span class="mobile-card-label"><i class="fas fa-book"></i> Subject:</span>
+            <span class="mobile-card-value">{{ record.subject or '-' }}</span>
         </div>
         <div class="mobile-card-row">
             <span class="mobile-card-label"><i class="fas fa-clipboard-check"></i> Status:</span>
@@ -155,13 +183,15 @@ function setThisMonth() {
 
 // Show filters by default if any filter is active
 document.addEventListener('DOMContentLoaded', function() {
+    const admissionYearFilter = document.querySelector('select[name="admission_year"]') ? document.querySelector('select[name="admission_year"]').value : '';
     const yearFilter = document.querySelector('select[name="year"]').value;
     const classFilter = document.querySelector('select[name="class"]').value;
+    const subjectFilter = document.querySelector('select[name="subject"]') ? document.querySelector('select[name="subject"]').value : '';
     const startDate = document.querySelector('input[name="start_date"]').value;
     const endDate = document.querySelector('input[name="end_date"]').value;
     const statusFilter = document.querySelector('select[name="status"]').value;
     
-    if (yearFilter || classFilter || startDate || endDate || statusFilter) {
+    if (admissionYearFilter || yearFilter || classFilter || subjectFilter || startDate || endDate || statusFilter) {
         document.getElementById('filterForm').classList.remove('hidden');
     }
 });

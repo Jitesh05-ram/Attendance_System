@@ -1,31 +1,35 @@
 {% extends "base.html" %}
 {% block content %}
 <h1><i class="fas fa-edit"></i> Edit Student</h1>
-<form method="POST">
-    <div>
-        <label><i class="fas fa-id-badge"></i> Roll No:</label>
-        <input type="text" name="roll_no" value="{{ student.roll_no }}" required>
+<div class="auth-wrapper" style="min-height: auto;">
+    <div class="auth-card">
+        <form method="POST" class="auth-form">
+            <div class="input-group">
+                <i class="fas fa-id-badge input-icon"></i>
+                <input type="text" name="roll_no" value="{{ student.roll_no }}" required class="auth-input">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-user input-icon"></i>
+                <input type="text" name="name" value="{{ student.name }}" required class="auth-input">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-calendar-alt input-icon"></i>
+                <select name="admission_year" required class="auth-input" style="padding-left: 3.5rem;">
+                    {% for y in admission_years %}
+                        <option value="{{ y }}" {% if student.admission_year == y|int %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="input-group">
+                <i class="fas fa-envelope input-icon"></i>
+                <input type="email" name="email" value="{{ student.email or '' }}" placeholder="Enter student email (optional)" class="auth-input">
+            </div>
+            <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                <h4 style="color: #06b6d4; margin-bottom: 0.5rem;"><i class="fas fa-info-circle"></i> Auto-Generated Class</h4>
+                <p style="font-size: 0.9rem; color: #94a3b8;">Current Class: <strong>{{ student.class_name }}</strong> (auto-updates each academic year)</p>
+            </div>
+            <button type="submit" class="auth-btn primary-btn"><i class="fas fa-save"></i> Update Student</button>
+        </form>
     </div>
-    <div>
-        <label><i class="fas fa-user"></i> Name:</label>
-        <input type="text" name="name" value="{{ student.name }}" required>
-    </div>
-    <div>
-        <label><i class="fas fa-envelope"></i> Email (optional):</label>
-        <input type="email" name="email" value="{{ student.email or '' }}" placeholder="Enter student email">
-    </div>
-    <div>
-        <label><i class="fas fa-door-open"></i> Class:</label>
-        <input type="text" name="class_name" value="{{ student.class_name }}" required>
-    </div>
-    <div>
-        <label><i class="fas fa-graduation-cap"></i> Year:</label>
-        <select name="year" required>
-            {% for y in years %}
-                <option value="{{ y }}" {% if student.year == y %}selected{% endif %}>{{ y }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <button type="submit"><i class="fas fa-save"></i> Update Student</button>
-</form>
+</div>
 {% endblock %}

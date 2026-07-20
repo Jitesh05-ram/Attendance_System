@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<h1><i class="fas fa-plus-circle"></i> Add Subject</h1>
+
+<div class="auth-wrapper" style="min-height: auto;">
+    <div class="auth-card">
+        <form method="POST" class="auth-form">
+            <div class="input-group">
+                <i class="fas fa-book input-icon"></i>
+                <input type="text" name="name" placeholder="Subject Name" required class="auth-input">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-palette input-icon"></i>
+                <select name="icon" class="auth-input" style="padding-left: 3.5rem;">
+                    <option value="fa-book">📚 Book</option>
+                    <option value="fa-calculator">🧮 Calculator</option>
+                    <option value="fa-code">💻 Code</option>
+                    <option value="fa-microchip">🔌 Microchip</option>
+                    <option value="fa-flask">🧪 Flask</option>
+                    <option value="fa-paint-brush">🎨 Paintbrush</option>
+                    <option value="fa-music">🎵 Music</option>
+                    <option value="fa-globe">🌍 Globe</option>
+                    <option value="fa-chart-line">📈 Chart</option>
+                    <option value="fa-language">🗣️ Language</option>
+                    <option value="fa-database">🗄️ Database</option>
+                    <option value="fa-server">🖥️ Server</option>
+                    <option value="fa-puzzle-piece">🧩 Puzzle</option>
+                    <option value="fa-futbol">⚽ Football</option>
+                    <option value="fa-heartbeat">💓 Health</option>
+                    <option value="fa-infinity">♾️ Math</option>
+                </select>
+            </div>
+            {% if categories %}
+            <div class="input-group">
+                <i class="fas fa-tags input-icon"></i>
+                <select name="category_id" class="auth-input" style="padding-left: 3.5rem;">
+                    <option value="">Select Category (Optional)</option>
+                    {% for c in categories %}
+                        <option value="{{ c.id }}">{{ c.code }} {% if c.name %}({{ c.name }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <button type="submit" class="auth-btn primary-btn"><i class="fas fa-save"></i> Add Subject</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

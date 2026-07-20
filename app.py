@@ -4,7 +4,7 @@ from flask_mail import Mail, Message
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, UTC
 import pandas as pd
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
@@ -16,7 +16,7 @@ import secrets
 import string
 from config import Config
 from database.db import db
-from database.models import User, Student, Attendance
+from database.models import User, Student, Attendance, Subject, Category
 
 # Initialize Google Services (if credentials file exists)
 google_services = None
@@ -41,6 +41,31 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"]
 )
 
+# Icon emoji mapping (FA class → emoji)
+ICON_EMOJIS = {
+    "fa-book": "📚",
+    "fa-calculator": "🧮",
+    "fa-code": "💻",
+    "fa-microchip": "🔌",
+    "fa-flask": "🧪",
+    "fa-paint-brush": "🎨",
+    "fa-music": "🎵",
+    "fa-globe": "🌍",
+    "fa-chart-line": "📈",
+    "fa-language": "🗣️",
+    "fa-database": "🗄️",
+    "fa-server": "🖥️",
+    "fa-puzzle-piece": "🧩",
+    "fa-futbol": "⚽",
+    "fa-heartbeat": "💓",
+    "fa-infinity": "♾️",
+}
+
+# Add Jinja global
+@app.context_processor
+def utility_processor():
+    return dict(icon_to_emoji=lambda fa_class: ICON_EMOJIS.get(fa_class, "📚"))
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -48,7 +73,7 @@ login_manager.login_message_category = 'error'
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 # Helper function to generate random password
 def generate_password(length=12):
@@ -296,7 +321,7 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    today = datetime.utcnow().date()
+    today = datetime.now(UTC).date()
     
     # Basic Stats
     total_students = Student.query.filter_by(user_id=current_user.id).count()
@@ -320,16 +345,17 @@ def dashboard():
             if student_percent < 75:
                 defaulters_count += 1
     
-    # Year-wise student distribution
-    fy_students = Student.query.filter_by(user_id=current_user.id, year='FY').count()
-    sy_students = Student.query.filter_by(user_id=current_user.id, year='SY').count()
-    ty_students = Student.query.filter_by(user_id=current_user.id, year='TY').count()
+    # Year-wise student distribution (using current_year property)
+    all_students_list = Student.query.filter_by(user_id=current_user.id).all()
+    fy_students = sum(1 for s in all_students_list if s.current_year == 'FY')
+    sy_students = sum(1 for s in all_students_list if s.current_year == 'SY')
+    ty_students = sum(1 for s in all_students_list if s.current_year == 'TY')
     
     # Class-wise attendance percentage (simple)
-    class_names = list(set([s.class_name for s in Student.query.filter_by(user_id=current_user.id).all()])) if Student.query.filter_by(user_id=current_user.id).count() > 0 else []
+    class_names = list(set([s.class_name for s in all_students_list])) if all_students_list else []
     class_attendance = []
     for cls in class_names:
-        class_students = Student.query.filter_by(user_id=current_user.id, class_name=cls).all()
+        class_students = [s for s in all_students_list if s.class_name == cls]
         class_student_ids = [s.id for s in class_students]
         class_attendance_records = Attendance.query.filter(Attendance.user_id == current_user.id, Attendance.student_id.in_(class_student_ids)).all()
         if class_attendance_records:
@@ -338,7 +364,7 @@ def dashboard():
             class_attendance.append({"name": cls, "percent": class_percent})
     
     # This month's attendance summary
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     first_day_of_month = datetime(now.year, now.month, 1).date()
     last_day_of_month = datetime(now.year, now.month + 1, 1).date() if now.month < 12 else datetime(now.year + 1, 1, 1).date()
     month_attendance = Attendance.query.filter(Attendance.user_id == current_user.id, Attendance.date >= first_day_of_month, Attendance.date < last_day_of_month).all()
@@ -392,38 +418,45 @@ def students():
     search_query = request.args.get('search', '')
     selected_year = request.args.get('year', '')
     selected_class = request.args.get('class_filter', '')
+    selected_admission_year = request.args.get('admission_year', '')
     
-    query = Student.query.filter_by(user_id=current_user.id)
+    all_students = Student.query.filter_by(user_id=current_user.id).all()
     
+    # Filter students
+    filtered_students = all_students
     if search_query:
-        search = f"%{search_query}%"
-        query = query.filter(
-            (Student.name.ilike(search)) |
-            (Student.roll_no.ilike(search)) |
-            (Student.email.ilike(search)) |
-            (Student.class_name.ilike(search))
-        )
+        search = search_query.lower()
+        filtered_students = [
+            s for s in filtered_students 
+            if search in s.name.lower() 
+            or search in s.roll_no.lower()
+            or (s.email and search in s.email.lower())
+            or search in s.class_name.lower()
+        ]
     
     if selected_year:
-        query = query.filter_by(year=selected_year)
+        filtered_students = [s for s in filtered_students if s.current_year == selected_year]
     
     if selected_class:
-        query = query.filter_by(class_name=selected_class)
+        filtered_students = [s for s in filtered_students if s.class_name == selected_class]
     
-    students = query.all()
+    if selected_admission_year:
+        filtered_students = [s for s in filtered_students if s.admission_year == int(selected_admission_year)]
     
-    # Get unique years and classes for filters
-    all_students = Student.query.filter_by(user_id=current_user.id).all()
+    # Get unique values for filters
     years = ['FY', 'SY', 'TY']
     classes = list(set([s.class_name for s in all_students])) if all_students else []
+    admission_years = sorted(list(set([s.admission_year for s in all_students])), reverse=True) if all_students else []
     
     return render_template('students.html', 
-                         students=students, 
+                         students=filtered_students, 
                          search_query=search_query,
                          selected_year=selected_year,
                          selected_class=selected_class,
+                         selected_admission_year=selected_admission_year,
                          years=years,
-                         classes=classes)
+                         classes=classes,
+                         admission_years=admission_years)
 
 @app.route('/add_student', methods=['GET', 'POST'])
 @login_required
@@ -431,8 +464,7 @@ def add_student():
     if request.method == 'POST':
         roll_no = request.form['roll_no']
         name = request.form['name']
-        class_name = request.form['class_name']
-        year = request.form['year']
+        admission_year = int(request.form['admission_year'])
         email = request.form['email'].strip().lower() if request.form['email'] else None
         
         existing_student = Student.query.filter_by(user_id=current_user.id, roll_no=roll_no).first()
@@ -441,12 +473,22 @@ def add_student():
         elif email and Student.query.filter_by(user_id=current_user.id, email=email).first():
             flash('Student with this email already exists', 'error')
         else:
-            student = Student(user_id=current_user.id, roll_no=roll_no, name=name, class_name=class_name, year=year, email=email)
+            student = Student(
+                user_id=current_user.id,
+                roll_no=roll_no,
+                name=name,
+                admission_year=admission_year,
+                email=email
+            )
             db.session.add(student)
             db.session.commit()
             flash('Student added successfully', 'success')
             return redirect(url_for('students'))
-    return render_template('add_student.html', years=['FY', 'SY', 'TY'])
+    # Generate list of possible admission years (last 10 years + next 1)
+    from datetime import datetime
+    current_year = datetime.today().year
+    admission_years = [str(y) for y in range(current_year - 10, current_year + 2)]
+    return render_template('add_student.html', admission_years=admission_years)
 
 @app.route('/edit_student/<int:student_id>', methods=['GET', 'POST'])
 @login_required
@@ -455,13 +497,16 @@ def edit_student(student_id):
     if request.method == 'POST':
         student.roll_no = request.form['roll_no']
         student.name = request.form['name']
-        student.class_name = request.form['class_name']
-        student.year = request.form['year']
+        student.admission_year = int(request.form['admission_year'])
         student.email = request.form['email'].strip().lower() if request.form['email'] else None
         db.session.commit()
         flash('Student updated successfully', 'success')
         return redirect(url_for('students'))
-    return render_template('edit_student.html', student=student, years=['FY', 'SY', 'TY'])
+    # Generate list of possible admission years
+    from datetime import datetime
+    current_year = datetime.today().year
+    admission_years = [str(y) for y in range(current_year - 10, current_year + 2)]
+    return render_template('edit_student.html', student=student, admission_years=admission_years)
 
 @app.route('/delete_student/<int:student_id>', methods=['POST'])
 @login_required
@@ -476,36 +521,54 @@ def delete_student(student_id):
 @app.route('/attendance', methods=['GET', 'POST'])
 @login_required
 def attendance():
+    # Get filters, checking session for remembered subject first
     if request.method == 'POST':
         selected_year = request.form.get('year', '')
         selected_class = request.form.get('class_name', '')
+        selected_subject = request.form.get('subject', '')
+        selected_admission_year = request.form.get('admission_year', '')
+        # Remember subject in session
+        if selected_subject:
+            session['selected_subject'] = selected_subject
+        elif 'selected_subject' in session:
+            selected_subject = session['selected_subject']
     else:
         selected_year = request.args.get('year', '')
         selected_class = request.args.get('class_name', '')
+        selected_subject = request.args.get('subject', session.get('selected_subject', ''))
+        selected_admission_year = request.args.get('admission_year', '')
+        # Remember subject in session
+        if selected_subject:
+            session['selected_subject'] = selected_subject
     
-    # Get all unique classes for filter
+    # Get all students and generate filters
     all_students = Student.query.filter_by(user_id=current_user.id).all()
     class_names = list(set([s.class_name for s in all_students])) if all_students else []
     years = ['FY', 'SY', 'TY']
+    admission_years = sorted(list(set([s.admission_year for s in all_students])), reverse=True) if all_students else []
+    subjects = Subject.query.filter_by(user_id=current_user.id).all()
     
     if request.method == 'POST':
         date = request.form['date']
         date_obj = datetime.strptime(date, '%Y-%m-%d').date()
-        # Get filtered students for saving attendance
-        query = Student.query.filter_by(user_id=current_user.id)
+        subject_id = int(selected_subject) if selected_subject else None
+        
+        # Filter students
+        students = all_students
         if selected_year:
-            query = query.filter_by(year=selected_year)
+            students = [s for s in students if s.current_year == selected_year]
         if selected_class:
-            query = query.filter_by(class_name=selected_class)
-        students = query.all()
+            students = [s for s in students if s.class_name == selected_class]
+        if selected_admission_year:
+            students = [s for s in students if s.admission_year == int(selected_admission_year)]
         
         for student in students:
             status = request.form.get(f'status_{student.id}', 'Absent')
-            existing = Attendance.query.filter_by(user_id=current_user.id, student_id=student.id, date=date_obj).first()
+            existing = Attendance.query.filter_by(user_id=current_user.id, student_id=student.id, date=date_obj, subject_id=subject_id).first()
             if existing:
                 existing.status = status
             else:
-                attendance = Attendance(user_id=current_user.id, student_id=student.id, date=date_obj, status=status)
+                attendance = Attendance(user_id=current_user.id, student_id=student.id, subject_id=subject_id, date=date_obj, status=status)
                 db.session.add(attendance)
             
             # Sync to Google Cloud and Sheets if available
@@ -513,28 +576,34 @@ def attendance():
                 google_services.sync_attendance_to_cloud(
                     student.name,
                     student.roll_no,
-                    student.year,
+                    student.current_year,
                     date,
                     status
                 )
         db.session.commit()
         flash('Attendance marked and synced successfully', 'success')
         # Redirect back with filters
-        return redirect(url_for('attendance', year=selected_year, class_name=selected_class))
+        return redirect(url_for('attendance', 
+                               year=selected_year, 
+                               class_name=selected_class, 
+                               subject=selected_subject,
+                               admission_year=selected_admission_year))
     
-    today = datetime.utcnow().date()
+    today = datetime.now(UTC).date()
+    subject_id = int(selected_subject) if selected_subject else None
     
-    # Get filtered students for display
-    query = Student.query.filter_by(user_id=current_user.id)
+    # Filter students for display
+    students = all_students
     if selected_year:
-        query = query.filter_by(year=selected_year)
+        students = [s for s in students if s.current_year == selected_year]
     if selected_class:
-        query = query.filter_by(class_name=selected_class)
-    students = query.all()
+        students = [s for s in students if s.class_name == selected_class]
+    if selected_admission_year:
+        students = [s for s in students if s.admission_year == int(selected_admission_year)]
     
     attendance_data = {}
     for student in students:
-        existing = Attendance.query.filter_by(user_id=current_user.id, student_id=student.id, date=today).first()
+        existing = Attendance.query.filter_by(user_id=current_user.id, student_id=student.id, date=today, subject_id=subject_id).first()
         attendance_data[student.id] = existing.status if existing else 'Present'
     
     return render_template('attendance.html', 
@@ -543,29 +612,51 @@ def attendance():
                          attendance_data=attendance_data,
                          selected_year=selected_year,
                          selected_class=selected_class,
+                         selected_subject=selected_subject,
+                         selected_admission_year=selected_admission_year,
                          years=years,
-                         class_names=class_names)
+                         class_names=class_names,
+                         admission_years=admission_years,
+                         subjects=subjects)
 
 @app.route('/reports', methods=['GET', 'POST'])
 @login_required
 def reports():
-    students = Student.query.filter_by(user_id=current_user.id).all()
-    class_names = list(set([s.class_name for s in students])) if students else []
+    all_students = Student.query.filter_by(user_id=current_user.id).all()
+    class_names = list(set([s.class_name for s in all_students])) if all_students else []
     years = ['FY', 'SY', 'TY']
+    admission_years = sorted(list(set([s.admission_year for s in all_students])), reverse=True) if all_students else []
+    subjects = Subject.query.filter_by(user_id=current_user.id).all()
     
     selected_year = request.args.get('year', '')
     selected_class = request.args.get('class', '')
+    selected_admission_year = request.args.get('admission_year', '')
+    selected_subject = request.args.get('subject', session.get('selected_subject', ''))
     start_date = request.args.get('start_date', '')
     end_date = request.args.get('end_date', '')
     status = request.args.get('status', '')
     
+    # Remember subject in session
+    if selected_subject:
+        session['selected_subject'] = selected_subject
+    
     query = Attendance.query.filter_by(user_id=current_user.id)
+    
+    # Get filtered student IDs
+    filtered_student_ids = [s.id for s in all_students]
     if selected_year:
-        student_ids = [s.id for s in Student.query.filter_by(user_id=current_user.id, year=selected_year).all()]
-        query = query.filter(Attendance.student_id.in_(student_ids))
+        filtered_student_ids = [s.id for s in all_students if s.current_year == selected_year]
     if selected_class:
-        student_ids = [s.id for s in Student.query.filter_by(user_id=current_user.id, class_name=selected_class).all()]
-        query = query.filter(Attendance.student_id.in_(student_ids))
+        filtered_student_ids = [s.id for s in all_students if s.class_name == selected_class and s.id in filtered_student_ids]
+    if selected_admission_year:
+        filtered_student_ids = [s.id for s in all_students if s.admission_year == int(selected_admission_year) and s.id in filtered_student_ids]
+    
+    query = query.filter(Attendance.student_id.in_(filtered_student_ids))
+    
+    # Apply subject filter
+    if selected_subject:
+        query = query.filter(Attendance.subject_id == int(selected_subject))
+    
     if start_date:
         query = query.filter(Attendance.date >= datetime.strptime(start_date, '%Y-%m-%d').date())
     if end_date:
@@ -578,12 +669,14 @@ def reports():
     report_data = []
     for record in attendance_records:
         student = Student.query.filter_by(user_id=current_user.id, id=record.student_id).first()
+        subject = Subject.query.filter_by(id=record.subject_id).first() if record.subject_id else None
         if student:
             report_data.append({
                 'date': record.date,
                 'roll_no': student.roll_no,
                 'name': student.name,
                 'class': student.class_name,
+                'subject': subject.name if subject else '',
                 'status': record.status
             })
     
@@ -591,8 +684,12 @@ def reports():
                          report_data=report_data, 
                          class_names=class_names,
                          years=years,
+                         admission_years=admission_years,
+                         subjects=subjects,
                          selected_year=selected_year,
                          selected_class=selected_class,
+                         selected_admission_year=selected_admission_year,
+                         selected_subject=selected_subject,
                          start_date=start_date,
                          end_date=end_date,
                          status=status)
@@ -600,19 +697,32 @@ def reports():
 @app.route('/download_report_excel')
 @login_required
 def download_report_excel():
+    all_students = Student.query.filter_by(user_id=current_user.id).all()
     selected_year = request.args.get('year', '')
     selected_class = request.args.get('class', '')
+    selected_admission_year = request.args.get('admission_year', '')
+    selected_subject = request.args.get('subject', session.get('selected_subject', ''))
     start_date = request.args.get('start_date', '')
     end_date = request.args.get('end_date', '')
     status = request.args.get('status', '')
     
     query = Attendance.query.filter_by(user_id=current_user.id)
+    
+    # Get filtered student IDs
+    filtered_student_ids = [s.id for s in all_students]
     if selected_year:
-        student_ids = [s.id for s in Student.query.filter_by(user_id=current_user.id, year=selected_year).all()]
-        query = query.filter(Attendance.student_id.in_(student_ids))
+        filtered_student_ids = [s.id for s in all_students if s.current_year == selected_year]
     if selected_class:
-        student_ids = [s.id for s in Student.query.filter_by(user_id=current_user.id, class_name=selected_class).all()]
-        query = query.filter(Attendance.student_id.in_(student_ids))
+        filtered_student_ids = [s.id for s in all_students if s.class_name == selected_class and s.id in filtered_student_ids]
+    if selected_admission_year:
+        filtered_student_ids = [s.id for s in all_students if s.admission_year == int(selected_admission_year) and s.id in filtered_student_ids]
+    
+    query = query.filter(Attendance.student_id.in_(filtered_student_ids))
+    
+    # Apply subject filter
+    if selected_subject:
+        query = query.filter(Attendance.subject_id == int(selected_subject))
+    
     if start_date:
         query = query.filter(Attendance.date >= datetime.strptime(start_date, '%Y-%m-%d').date())
     if end_date:
@@ -625,12 +735,14 @@ def download_report_excel():
     data = []
     for record in attendance_records:
         student = Student.query.filter_by(user_id=current_user.id, id=record.student_id).first()
+        subject = Subject.query.filter_by(id=record.subject_id).first() if record.subject_id else None
         if student:
             data.append({
                 'Date': record.date,
                 'Roll No': student.roll_no,
                 'Name': student.name,
                 'Class': student.class_name,
+                'Subject': subject.name if subject else '',
                 'Status': record.status
             })
     
@@ -648,19 +760,32 @@ def download_report_excel():
 @app.route('/download_report_pdf')
 @login_required
 def download_report_pdf():
+    all_students = Student.query.filter_by(user_id=current_user.id).all()
     selected_year = request.args.get('year', '')
     selected_class = request.args.get('class', '')
+    selected_admission_year = request.args.get('admission_year', '')
+    selected_subject = request.args.get('subject', session.get('selected_subject', ''))
     start_date = request.args.get('start_date', '')
     end_date = request.args.get('end_date', '')
     status = request.args.get('status', '')
     
     query = Attendance.query.filter_by(user_id=current_user.id)
+    
+    # Get filtered student IDs
+    filtered_student_ids = [s.id for s in all_students]
     if selected_year:
-        student_ids = [s.id for s in Student.query.filter_by(user_id=current_user.id, year=selected_year).all()]
-        query = query.filter(Attendance.student_id.in_(student_ids))
+        filtered_student_ids = [s.id for s in all_students if s.current_year == selected_year]
     if selected_class:
-        student_ids = [s.id for s in Student.query.filter_by(user_id=current_user.id, class_name=selected_class).all()]
-        query = query.filter(Attendance.student_id.in_(student_ids))
+        filtered_student_ids = [s.id for s in all_students if s.class_name == selected_class and s.id in filtered_student_ids]
+    if selected_admission_year:
+        filtered_student_ids = [s.id for s in all_students if s.admission_year == int(selected_admission_year) and s.id in filtered_student_ids]
+    
+    query = query.filter(Attendance.student_id.in_(filtered_student_ids))
+    
+    # Apply subject filter
+    if selected_subject:
+        query = query.filter(Attendance.subject_id == int(selected_subject))
+    
     if start_date:
         query = query.filter(Attendance.date >= datetime.strptime(start_date, '%Y-%m-%d').date())
     if end_date:
@@ -679,15 +804,17 @@ def download_report_pdf():
     elements.append(title)
     elements.append(Paragraph("<br/>", styles['Normal']))
     
-    table_data = [['Date', 'Roll No', 'Name', 'Class', 'Status']]
+    table_data = [['Date', 'Roll No', 'Name', 'Class', 'Subject', 'Status']]
     for record in attendance_records:
         student = Student.query.filter_by(user_id=current_user.id, id=record.student_id).first()
+        subject = Subject.query.filter_by(id=record.subject_id).first() if record.subject_id else None
         if student:
             table_data.append([
                 str(record.date),
                 student.roll_no,
                 student.name,
                 student.class_name,
+                subject.name if subject else '',
                 record.status
             ])
     
@@ -719,17 +846,21 @@ def defaulters():
     
     selected_year = request.args.get('year', '')
     selected_class = request.args.get('class', '')
+    selected_admission_year = request.args.get('admission_year', '')
     
     # Get all unique classes for filter
     all_students = Student.query.filter_by(user_id=current_user.id).all()
     class_names = list(set([s.class_name for s in all_students])) if all_students else []
+    admission_years = sorted(list(set([s.admission_year for s in all_students])), reverse=True) if all_students else []
     
-    query = Student.query.filter_by(user_id=current_user.id)
+    # Filter students
+    students = all_students
     if selected_year:
-        query = query.filter_by(year=selected_year)
+        students = [s for s in students if s.current_year == selected_year]
     if selected_class:
-        query = query.filter_by(class_name=selected_class)
-    students = query.all()
+        students = [s for s in students if s.class_name == selected_class]
+    if selected_admission_year:
+        students = [s for s in students if s.admission_year == int(selected_admission_year)]
     
     defaulters_list = []
     
@@ -756,8 +887,111 @@ def defaulters():
                          threshold=threshold,
                          years=years,
                          class_names=class_names,
+                         admission_years=admission_years,
                          selected_year=selected_year,
-                         selected_class=selected_class)
+                         selected_class=selected_class,
+                         selected_admission_year=selected_admission_year)
+
+@app.route('/categories')
+@login_required
+def categories():
+    categories = Category.query.filter_by(user_id=current_user.id).all()
+    return render_template('categories.html', categories=categories)
+
+@app.route('/add_category', methods=['GET', 'POST'])
+@login_required
+def add_category():
+    if request.method == 'POST':
+        code = request.form['code']
+        name = request.form.get('name', '')
+        existing = Category.query.filter_by(user_id=current_user.id, code=code).first()
+        if existing:
+            flash('Category with this code already exists', 'error')
+        else:
+            category = Category(user_id=current_user.id, code=code, name=name)
+            db.session.add(category)
+            db.session.commit()
+            flash('Category added successfully', 'success')
+            return redirect(url_for('categories'))
+    return render_template('add_category.html')
+
+@app.route('/edit_category/<int:category_id>', methods=['GET', 'POST'])
+@login_required
+def edit_category(category_id):
+    category = Category.query.filter_by(user_id=current_user.id, id=category_id).first_or_404()
+    if request.method == 'POST':
+        category.code = request.form['code']
+        category.name = request.form.get('name', '')
+        db.session.commit()
+        flash('Category updated successfully', 'success')
+        return redirect(url_for('categories'))
+    return render_template('edit_category.html', category=category)
+
+@app.route('/delete_category/<int:category_id>', methods=['POST'])
+@login_required
+def delete_category(category_id):
+    category = Category.query.filter_by(user_id=current_user.id, id=category_id).first_or_404()
+    Subject.query.filter_by(category_id=category_id).update({'category_id': None})
+    db.session.delete(category)
+    db.session.commit()
+    flash('Category deleted successfully', 'success')
+    return redirect(url_for('categories'))
+
+@app.route('/subjects')
+@login_required
+def subjects():
+    search_query = request.args.get('search', '')
+    selected_category = request.args.get('category', '')
+    query = Subject.query.filter_by(user_id=current_user.id)
+    if search_query:
+        search = f"%{search_query}%"
+        query = query.filter(Subject.name.ilike(search))
+    if selected_category:
+        query = query.filter_by(category_id=selected_category)
+    subjects = query.all()
+    categories = Category.query.filter_by(user_id=current_user.id).all()
+    return render_template('subjects.html', subjects=subjects, categories=categories, search_query=search_query, selected_category=selected_category)
+
+@app.route('/add_subject', methods=['GET', 'POST'])
+@login_required
+def add_subject():
+    categories = Category.query.filter_by(user_id=current_user.id).all()
+    if request.method == 'POST':
+        name = request.form['name']
+        icon = request.form.get('icon', '📚')
+        category_id = request.form.get('category_id')
+        category_id = int(category_id) if category_id else None
+        subject = Subject(user_id=current_user.id, name=name, icon=icon, category_id=category_id)
+        db.session.add(subject)
+        db.session.commit()
+        flash('Subject added successfully', 'success')
+        return redirect(url_for('subjects'))
+    return render_template('add_subject.html', categories=categories)
+
+@app.route('/edit_subject/<int:subject_id>', methods=['GET', 'POST'])
+@login_required
+def edit_subject(subject_id):
+    subject = Subject.query.filter_by(user_id=current_user.id, id=subject_id).first_or_404()
+    categories = Category.query.filter_by(user_id=current_user.id).all()
+    if request.method == 'POST':
+        subject.name = request.form['name']
+        subject.icon = request.form.get('icon', '📚')
+        category_id = request.form.get('category_id')
+        subject.category_id = int(category_id) if category_id else None
+        db.session.commit()
+        flash('Subject updated successfully', 'success')
+        return redirect(url_for('subjects'))
+    return render_template('edit_subject.html', subject=subject, categories=categories)
+
+@app.route('/delete_subject/<int:subject_id>', methods=['POST'])
+@login_required
+def delete_subject(subject_id):
+    subject = Subject.query.filter_by(user_id=current_user.id, id=subject_id).first_or_404()
+    Attendance.query.filter_by(subject_id=subject_id).update({'subject_id': None})
+    db.session.delete(subject)
+    db.session.commit()
+    flash('Subject deleted successfully', 'success')
+    return redirect(url_for('subjects'))
 
 if __name__ == '__main__':
     app.run(debug=True)

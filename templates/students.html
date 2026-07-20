@@ -10,8 +10,19 @@
             <label><i class="fas fa-search"></i> Search:</label>
             <input type="text" name="search" placeholder="Search by name, roll, email, or class" value="{{ search_query }}" style="width: 100%;">
         </div>
+        {% if admission_years %}
         <div style="min-width: 120px;">
-            <label><i class="fas fa-graduation-cap"></i> Year:</label>
+            <label><i class="fas fa-calendar-alt"></i> Admission Year:</label>
+            <select name="admission_year" style="width: 100%;">
+                <option value="">All</option>
+                {% for y in admission_years %}
+                    <option value="{{ y }}" {% if selected_admission_year == y|string %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        <div style="min-width: 120px;">
+            <label><i class="fas fa-graduation-cap"></i> Current Year:</label>
             <select name="year" style="width: 100%;">
                 <option value="">All Years</option>
                 {% for y in years %}
@@ -39,7 +50,8 @@
     <table>
         <thead>
             <tr>
-                <th><i class="fas fa-star"></i> Year</th>
+                <th><i class="fas fa-calendar-alt"></i> Admission Year</th>
+                <th><i class="fas fa-star"></i> Current Year</th>
                 <th><i class="fas fa-id-badge"></i> Roll No</th>
                 <th><i class="fas fa-user"></i> Name</th>
                 <th><i class="fas fa-envelope"></i> Email</th>
@@ -50,15 +62,16 @@
         <tbody>
             {% for student in students %}
             <tr>
+                <td>{{ student.admission_year }}</td>
                 <td>
-                    {% if student.year == 'FY' %}
+                    {% if student.current_year == 'FY' %}
                         <i class="fas fa-graduation-cap" style="color: #06b6d4; font-size: 1.2rem;" title="First Year"></i>
-                    {% elif student.year == 'SY' %}
+                    {% elif student.current_year == 'SY' %}
                         <i class="fas fa-book" style="color: #10b981; font-size: 1.2rem;" title="Second Year"></i>
-                    {% elif student.year == 'TY' %}
+                    {% elif student.current_year == 'TY' %}
                         <i class="fas fa-trophy" style="color: #f59e0b; font-size: 1.2rem;" title="Third Year"></i>
                     {% endif %}
-                    <span style="margin-left: 0.5rem;">{{ student.year }}</span>
+                    <span style="margin-left: 0.5rem;">{{ student.current_year or '-' }}</span>
                 </td>
                 <td>{{ student.roll_no }}</td>
                 <td>{{ student.name }}</td>
@@ -76,6 +89,10 @@
                         </form>
                     </div>
                 </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" style="text-align: center; color: #94a3b8; padding: 2rem;">No students found</td>
             </tr>
             {% endfor %}
         </tbody>

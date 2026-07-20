@@ -6,8 +6,19 @@
 <!-- Filter Section -->
 <div class="search-filter-section" style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px; margin: 1.5rem 0; border: 1px solid rgba(0, 255, 255, 0.2);">
     <form method="GET" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+        {% if admission_years %}
         <div style="min-width: 150px;">
-            <label><i class="fas fa-graduation-cap"></i> Year:</label>
+            <label><i class="fas fa-calendar-alt"></i> Admission Year:</label>
+            <select name="admission_year" style="width: 100%;">
+                <option value="">All</option>
+                {% for y in admission_years %}
+                <option value="{{ y }}" {% if selected_admission_year == y|string %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        <div style="min-width: 150px;">
+            <label><i class="fas fa-graduation-cap"></i> Current Year:</label>
             <select name="year" style="width: 100%;">
                 <option value="">All Years</option>
                 {% for year in years %}

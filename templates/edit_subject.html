@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<h1><i class="fas fa-edit"></i> Edit Subject</h1>
+
+<div class="auth-wrapper" style="min-height: auto;">
+    <div class="auth-card">
+        <form method="POST" class="auth-form">
+            <div class="input-group">
+                <i class="fas fa-book input-icon"></i>
+                <input type="text" name="name" placeholder="Subject Name" value="{{ subject.name }}" required class="auth-input">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-palette input-icon"></i>
+                <select name="icon" class="auth-input" style="padding-left: 3.5rem;">
+                    <option value="fa-book" {% if subject.icon == 'fa-book' %}selected{% endif %}>📚 Book</option>
+                    <option value="fa-calculator" {% if subject.icon == 'fa-calculator' %}selected{% endif %}>🧮 Calculator</option>
+                    <option value="fa-code" {% if subject.icon == 'fa-code' %}selected{% endif %}>💻 Code</option>
+                    <option value="fa-microchip" {% if subject.icon == 'fa-microchip' %}selected{% endif %}>🔌 Microchip</option>
+                    <option value="fa-flask" {% if subject.icon == 'fa-flask' %}selected{% endif %}>🧪 Flask</option>
+                    <option value="fa-paint-brush" {% if subject.icon == 'fa-paint-brush' %}selected{% endif %}>🎨 Paintbrush</option>
+                    <option value="fa-music" {% if subject.icon == 'fa-music' %}selected{% endif %}>🎵 Music</option>
+                    <option value="fa-globe" {% if subject.icon == 'fa-globe' %}selected{% endif %}>🌍 Globe</option>
+                    <option value="fa-chart-line" {% if subject.icon == 'fa-chart-line' %}selected{% endif %}>📈 Chart</option>
+                    <option value="fa-language" {% if subject.icon == 'fa-language' %}selected{% endif %}>🗣️ Language</option>
+                    <option value="fa-database" {% if subject.icon == 'fa-database' %}selected{% endif %}>🗄️ Database</option>
+                    <option value="fa-server" {% if subject.icon == 'fa-server' %}selected{% endif %}>🖥️ Server</option>
+                    <option value="fa-puzzle-piece" {% if subject.icon == 'fa-puzzle-piece' %}selected{% endif %}>🧩 Puzzle</option>
+                    <option value="fa-futbol" {% if subject.icon == 'fa-futbol' %}selected{% endif %}>⚽ Football</option>
+                    <option value="fa-heartbeat" {% if subject.icon == 'fa-heartbeat' %}selected{% endif %}>💓 Health</option>
+                    <option value="fa-infinity" {% if subject.icon == 'fa-infinity' %}selected{% endif %}>♾️ Math</option>
+                </select>
+            </div>
+            {% if categories %}
+            <div class="input-group">
+                <i class="fas fa-tags input-icon"></i>
+                <select name="category_id" class="auth-input" style="padding-left: 3.5rem;">
+                    <option value="">Select Category (Optional)</option>
+                    {% for c in categories %}
+                        <option value="{{ c.id }}" {% if subject.category_id == c.id %}selected{% endif %}>{{ c.code }} {% if c.name %}({{ c.name }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <button type="submit" class="auth-btn primary-btn"><i class="fas fa-save"></i> Update Subject</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
