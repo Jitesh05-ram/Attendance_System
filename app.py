@@ -415,6 +415,9 @@ def dashboard():
 @app.route('/students')
 @login_required
 def students():
+    from datetime import datetime
+    today_year = datetime.today().year
+    
     search_query = request.args.get('search', '')
     selected_year = request.args.get('year', '')
     selected_class = request.args.get('class_filter', '')
@@ -456,7 +459,73 @@ def students():
                          selected_admission_year=selected_admission_year,
                          years=years,
                          classes=classes,
-                         admission_years=admission_years)
+                         admission_years=admission_years,
+                         today_year=today_year)
+
+@app.route('/upload_students', methods=['POST'])
+@login_required
+def upload_students():
+    import os
+    from werkzeug.utils import secure_filename
+    from excel.import_excel import import_students_from_file
+    
+    # Get file from request
+    if 'file' not in request.files:
+        flash('No file uploaded', 'error')
+        return redirect(url_for('students'))
+    
+    file = request.files['file']
+    if file.filename == '':
+        flash('No file selected', 'error')
+        return redirect(url_for('students'))
+    
+    # Get admission year from form
+    admission_year = None
+    if 'admission_year' in request.form and request.form['admission_year']:
+        admission_year = int(request.form['admission_year'])
+    
+    # Validate file extension
+    allowed_extensions = {'csv', 'xlsx', 'xls'}
+    file_ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+    if file_ext not in allowed_extensions:
+        flash('Invalid file type. Please use CSV or Excel files only.', 'error')
+        return redirect(url_for('students'))
+    
+    # Save file temporarily
+    temp_dir = 'temp_uploads'
+    os.makedirs(temp_dir, exist_ok=True)
+    filename = secure_filename(file.filename)
+    temp_path = os.path.join(temp_dir, filename)
+    file.save(temp_path)
+    
+    try:
+        # Import students
+        imported_count, duplicates, errors = import_students_from_file(temp_path, current_user.id, admission_year)
+        
+        # Show success message
+        if imported_count > 0:
+            flash(f'{imported_count} students imported successfully!', 'success')
+        
+        if duplicates:
+            duplicate_names = [f"{d['name']} ({d['roll_no']})" for d in duplicates]
+            flash(f'Skipped {len(duplicates)} duplicate(s): {", ".join(duplicate_names)}', 'warning')
+        
+        if errors:
+            for error in errors:
+                flash(error, 'error')
+                
+    except Exception as e:
+        flash(f'Error importing students: {str(e)}', 'error')
+    finally:
+        # Clean up temporary file
+        try:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+        except Exception as e:
+            print(f'Error removing temp file: {e}')
+    
+    return redirect(url_for('students'))
+
 
 @app.route('/add_student', methods=['GET', 'POST'])
 @login_required

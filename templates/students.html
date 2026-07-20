@@ -1,7 +1,31 @@
 {% extends "base.html" %}
 {% block content %}
 <h1><i class="fas fa-user-graduate"></i> Students</h1>
-<a href="{{ url_for('add_student') }}" class="btn"><i class="fas fa-plus-circle"></i> Add Student</a>
+<div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+    <a href="{{ url_for('add_student') }}" class="btn"><i class="fas fa-plus-circle"></i> Add Student</a>
+    <button class="btn" id="toggle-upload-btn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);"><i class="fas fa-file-upload"></i> Upload Student List</button>
+</div>
+
+<!-- Upload Student List Section -->
+<div id="upload-section" style="display: none; background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px; margin: 1.5rem 0; border: 1px solid rgba(0, 255, 255, 0.2);">
+    <h3 style="margin-top: 0; color: #64ffda;"><i class="fas fa-cloud-upload-alt"></i> Upload Student List</h3>
+    <p style="color: #94a3b8; margin-bottom: 1rem;">Supported formats: .csv, .xlsx, .xls<br/>The file should contain student names (can be a single column or a column named "Name")</p>
+    <form method="POST" action="{{ url_for('upload_students') }}" enctype="multipart/form-data" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+        <div style="flex: 1; min-width: 200px;">
+            <label style="display: block; margin-bottom: 0.5rem; color: #e2e8f0;"><i class="fas fa-file"></i> Select File</label>
+            <input type="file" name="file" accept=".csv,.xlsx,.xls" required style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(15,23,42,0.9); color: #e2e8f0;">
+        </div>
+        <div style="min-width: 150px;">
+            <label style="display: block; margin-bottom: 0.5rem; color: #e2e8f0;"><i class="fas fa-calendar-alt"></i> Admission Year</label>
+            <select name="admission_year" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(15,23,42,0.9); color: #e2e8f0;">
+                {% for y in range(today_year - 10, today_year + 2) %}
+                <option value="{{ y }}" {% if y == today_year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn" style="background: linear-gradient(135deg, #64ffda 0%, #22d3ee 100%); color: #0f172a; font-weight: bold;"><i class="fas fa-upload"></i> Upload</button>
+    </form>
+</div>
 
 <!-- Search and Filter Section -->
 <div class="search-filter-section" style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px; margin: 1.5rem 0; border: 1px solid rgba(0, 255, 255, 0.2);">
@@ -98,4 +122,15 @@
         </tbody>
     </table>
 </div>
+
+<script>
+document.getElementById('toggle-upload-btn').addEventListener('click', function() {
+    const uploadSection = document.getElementById('upload-section');
+    if (uploadSection.style.display === 'none' || uploadSection.style.display === '') {
+        uploadSection.style.display = 'block';
+    } else {
+        uploadSection.style.display = 'none';
+    }
+});
+</script>
 {% endblock %}
